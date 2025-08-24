@@ -7,7 +7,7 @@ Rg-fancy is a Neovim plugin to use [ripgrep](https://github.com/BurntSushi/ripgr
 
 - Rust (>= 1.85.0)
 
-No [ripgrep] binary is required since we utilize the [grep crate](https://crates.io/crates/grep) directly.
+No [ripgrep](https://github.com/BurntSushi/ripgrep) binary is required since we utilize the [grep crate](https://crates.io/crates/grep) directly.
 
 
 # Install
