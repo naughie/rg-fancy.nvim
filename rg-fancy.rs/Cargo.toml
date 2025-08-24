@@ -1,0 +1,9 @@
+[package]
+name = "rg-fancy-rs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+nvim-router = { git = "https://github.com/naughie/nvim-router.rs.git", branch = "main", features = ["tokio"] }
+ignore = "0.4"
+grep = "0.3"
