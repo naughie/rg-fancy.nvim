@@ -73,7 +73,7 @@ Once spawning you can grep-search.
                     },
 
                     -- Keymaps on a grep-result window, opened by open_results
-                    filer = {
+                    results = {
                         -- Close the window.
                         { 'n', 'q', 'close_results' },
 
