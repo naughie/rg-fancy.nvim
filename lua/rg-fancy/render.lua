@@ -143,9 +143,10 @@ local function render_matched(result, renderer, input)
 
     for i, item in ipairs(result.after) do
         local line_idx = tostring(base_line + i - 1)
-
-        renderer.insert_line(item, "context")
-        renderer.set_line_idx(line_idx)
+        if item and item ~= vim.NIL then
+            renderer.insert_line(item, "context")
+            renderer.set_line_idx(line_idx)
+        end
     end
 end
 
