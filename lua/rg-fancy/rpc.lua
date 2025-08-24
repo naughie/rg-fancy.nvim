@@ -23,8 +23,7 @@ function M.register(plugin_dir, new_ns)
 end
 
 M.call = {
-    grep = function(path, pattern)
-        local cwd = vim.uv.cwd()
+    grep = function(cwd, path, pattern)
         return rpc.request("grep", cwd, path, pattern)
     end,
 }

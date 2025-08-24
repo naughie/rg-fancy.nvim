@@ -16,9 +16,9 @@ fn search_results(dir: &Path, pattern: &str) -> Value {
     rpc::to_values(results)
 }
 
-fn resolve_path(cwd: &str, path: &str) -> Option<PathBuf> {
+fn resolve_path(cwd: &str, path: &str) -> PathBuf {
     let cwd: &Path = cwd.as_ref();
-    cwd.join(path).canonicalize().ok()
+    cwd.join(path)
 }
 
 #[derive(Clone)]
@@ -46,9 +46,7 @@ impl<W: NeovimWriter> nvim_router::NeovimHandler<W> for NeovimHandler {
                 return Ok(Value::Nil);
             };
 
-            let Some(path) = resolve_path(&cwd, &path) else {
-                return Ok(Value::Nil);
-            };
+            let path = resolve_path(&cwd, &path);
 
             Ok(search_results(&path, &pattern))
         } else {

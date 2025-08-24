@@ -33,6 +33,8 @@ local function create_file_renderer(buf)
     local lines = {}
     local exts = {}
 
+    local max_line_idx_width = 0
+
     return {
         insert_line = function(line, hl_group)
             table.insert(lines, line)
@@ -61,13 +63,23 @@ local function create_file_renderer(buf)
                     hl_group = "line_idx",
                 })
             end
+
+            local line_idx_width = vim.fn.strwidth(line_idx)
+            max_line_idx_width = math.max(max_line_idx_width, line_idx_width)
         end,
 
         append_after = function(total_lines)
             api.nvim_buf_set_lines(buf, total_lines, -1, false, lines)
             for _, ext in ipairs(exts) do
                 if ext.hl_group == "line_idx" or ext.hl_group == "cursor_line_idx" then
-                    hl.set_extmark[ext.hl_group](buf, ext.line_idx, ext.to + total_lines)
+                    local pad = string.rep(" ", max_line_idx_width - vim.fn.strwidth(ext.line_idx))
+                    local virt_text = pad .. ext.line_idx .. "│  "
+                    if ext.hl_group == "cursor_line_idx" then
+                        virt_text = " \u{ee83} " .. virt_text
+                    else
+                        virt_text = "   " .. virt_text
+                    end
+                    hl.set_extmark[ext.hl_group](buf, virt_text, ext.to + total_lines)
                 else
                     hl.set_extmark[ext.hl_group](buf, {
                         start_line = ext.start_line + total_lines,
@@ -82,16 +94,25 @@ local function create_file_renderer(buf)
     }
 end
 
-local function render_error(result, renderer)
-    renderer.insert_line(result.path, "path")
-    if result.path and result.path ~= vim.NIL then
-        renderer.insert_line(result.path, "path")
+local function render_result_path(path, renderer, input)
+    local trunc = path
+    if string.find(path, input.cwd, 1, true) == 1 then
+        trunc = string.sub(path, #input.cwd + 2)
     end
-    renderer.insert_line(result.error, "error")
+    renderer.insert_line(" \u{f4ec} " .. trunc, "path")
 end
 
-local function render_matched(result, renderer)
-    renderer.insert_line(result.path, "path")
+local function render_error(result, renderer, input)
+    if result.path and result.path ~= vim.NIL then
+        render_result_path(result.path, renderer, input)
+    end
+
+    renderer.insert_line("")
+    renderer.insert_line(" \u{f421} " .. result.error, "error")
+end
+
+local function render_matched(result, renderer, input)
+    render_result_path(result.path, renderer, input)
 
     local base_line = nil
     if result.line_idx and result.line_idx ~= vim.NIL then
@@ -150,10 +171,10 @@ local function render_header(buf, results, input, win_width)
     end
 
     local header = {
-        "Grep summary",
-        "    #matches: " .. tostring(count),
-        "    Path: " .. input.path,
-        "    Pattern: " .. input.pattern,
+        "\u{e370} Grep summary\u{e370}",
+        "    \u{f422} #matches \u{f061} " .. tostring(count),
+        "    \u{f034e} Path \u{f061} " .. input.path,
+        "    \u{f0451} Pattern \u{f061} " .. input.pattern,
     }
 
     local rendered = {}
@@ -179,6 +200,7 @@ function M.results(buf, results, input)
 
     api.nvim_set_option_value("modifiable", true, { buf = buf })
 
+    hl.clear_extmarks(buf)
     local total_lines = render_header(buf, results, input, win_width)
     for _, result in ipairs(results) do
         local renderer = create_file_renderer(buf)
@@ -187,9 +209,9 @@ function M.results(buf, results, input)
         renderer.insert_line(sep, "separator")
 
         if result.error and result.error ~= vim.NIL then
-            render_error(result, renderer)
+            render_error(result, renderer, input)
         else
-            render_matched(result, renderer)
+            render_matched(result, renderer, input)
         end
 
         total_lines = renderer.append_after(total_lines)

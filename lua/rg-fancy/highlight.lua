@@ -51,19 +51,23 @@ for key, hl in pairs(hl_names) do
     end
 end
 
-M.set_extmark.line_idx = function(buf, line_idx, to)
+M.set_extmark.line_idx = function(buf, virt_text, to)
     api.nvim_buf_set_extmark(buf, ns, to, 0, {
-        virt_text = { { line_idx .. ": ", hl_names.line_idx } },
+        virt_text = { { virt_text, hl_names.line_idx } },
         virt_text_pos = "inline",
         right_gravity = false,
     })
 end
-M.set_extmark.cursor_line_idx = function(buf, line_idx, to)
+M.set_extmark.cursor_line_idx = function(buf, virt_text, to)
     api.nvim_buf_set_extmark(buf, ns, to, 0, {
-        virt_text = { { line_idx .. ": ", hl_names.cursor_line_idx } },
+        virt_text = { { virt_text, hl_names.cursor_line_idx } },
         virt_text_pos = "inline",
         right_gravity = false,
     })
+end
+
+M.clear_extmarks = function(buf)
+    api.nvim_buf_clear_namespace(buf, ns, 0, -1)
 end
 
 return M
