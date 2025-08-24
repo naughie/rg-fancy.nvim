@@ -32,7 +32,7 @@ Once spawning you can grep-search.
         opts = function(plugin)
             return {
                 plugin_dir = plugin.dir,
-                ns = { "lazy-filer" },
+                ns = { "rg-fancy" },
             }
         end,
     },
