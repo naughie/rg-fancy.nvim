@@ -106,7 +106,7 @@ function M.setup(opts)
 
     hl.set_highlight_groups(opts.hl)
 
-    rpc.register(plugin_dir, opts.rpc_ns)
+    rpc.register(plugin_dir, opts.rpc_ns, opts.context_length)
 end
 
 return M

@@ -9,11 +9,11 @@ use nvim_router::nvim_rs::{Neovim, Value};
 use std::path::Path;
 use std::path::PathBuf;
 
-fn search_results(dir: &Path, pattern: &str) -> Value {
-    let Some(results) = rg::search_dir(dir, pattern) else {
+fn search_results<const CONTEXT_LENGTH: usize>(dir: &Path, pattern: &str) -> Value {
+    let Some(results) = rg::search_dir::<CONTEXT_LENGTH>(dir, pattern) else {
         return Value::Nil;
     };
-    rpc::to_values(results)
+    rpc::to_values::<CONTEXT_LENGTH>(results)
 }
 
 fn resolve_path(cwd: &str, path: &str) -> PathBuf {
@@ -22,9 +22,11 @@ fn resolve_path(cwd: &str, path: &str) -> PathBuf {
 }
 
 #[derive(Clone)]
-pub struct NeovimHandler;
+pub struct NeovimHandler<const CONTEXT_LENGTH: usize>;
 
-impl<W: NeovimWriter> nvim_router::NeovimHandler<W> for NeovimHandler {
+impl<W: NeovimWriter, const CONTEXT_LENGTH: usize> nvim_router::NeovimHandler<W>
+    for NeovimHandler<CONTEXT_LENGTH>
+{
     fn new() -> Self {
         Self
     }
@@ -48,9 +50,20 @@ impl<W: NeovimWriter> nvim_router::NeovimHandler<W> for NeovimHandler {
 
             let path = resolve_path(&cwd, &path);
 
-            Ok(search_results(&path, &pattern))
+            Ok(search_results::<CONTEXT_LENGTH>(&path, &pattern))
         } else {
             Ok(Value::Nil)
         }
     }
 }
+
+pub type NeovimHandler1 = NeovimHandler<1>;
+pub type NeovimHandler2 = NeovimHandler<2>;
+pub type NeovimHandler3 = NeovimHandler<3>;
+pub type NeovimHandler4 = NeovimHandler<4>;
+pub type NeovimHandler5 = NeovimHandler<5>;
+pub type NeovimHandler6 = NeovimHandler<6>;
+pub type NeovimHandler7 = NeovimHandler<7>;
+pub type NeovimHandler8 = NeovimHandler<8>;
+pub type NeovimHandler9 = NeovimHandler<9>;
+pub type NeovimHandler10 = NeovimHandler<10>;

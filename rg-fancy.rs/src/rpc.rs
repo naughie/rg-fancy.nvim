@@ -10,7 +10,10 @@ fn err_value(e: RgErr, path: Option<&str>) -> Value {
     Value::Map(inner)
 }
 
-fn result_value(result: RgResult, path: &str) -> Value {
+fn result_value<const CONTEXT_LENGTH: usize>(
+    result: RgResult<CONTEXT_LENGTH>,
+    path: &str,
+) -> Value {
     let mut inner = vec![(Value::from("path"), Value::from(path))];
 
     if let Some(value) = result.line_idx {
@@ -59,8 +62,8 @@ fn result_value(result: RgResult, path: &str) -> Value {
     Value::Map(inner)
 }
 
-pub fn to_values(
-    search_results: impl Iterator<Item = Result<(RgResults, Option<RgErr>), RgErr>>,
+pub fn to_values<const CONTEXT_LENGTH: usize>(
+    search_results: impl Iterator<Item = Result<(RgResults<CONTEXT_LENGTH>, Option<RgErr>), RgErr>>,
 ) -> Value {
     let mut rpc_values = Vec::new();
 

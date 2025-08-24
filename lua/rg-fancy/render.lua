@@ -121,20 +121,13 @@ local function render_matched(result, renderer, input)
 
     renderer.insert_line("")
 
-    if result.before[1] and result.before[1] ~= vim.NIL then
-        local line_idx = tostring(base_line - 1)
-        if result.before[2] and result.before[2] ~= vim.NIL then
-            line_idx = tostring(base_line - 2)
+    for i = #result.before, 1, -1 do
+        local line_idx = tostring(base_line - i)
+        local item = result.before[i]
+        if item and item ~= vim.NIL then
+            renderer.insert_line(item, "context")
+            renderer.set_line_idx(line_idx)
         end
-
-        renderer.insert_line(result.before[1], "context")
-        renderer.set_line_idx(line_idx)
-    end
-    if result.before[2] and result.before[2] ~= vim.NIL then
-        local line_idx = tostring(base_line - 1)
-
-        renderer.insert_line(result.before[2], "context")
-        renderer.set_line_idx(line_idx)
     end
 
     if result.matched and result.matched ~= vim.NIL then
@@ -148,16 +141,10 @@ local function render_matched(result, renderer, input)
         end
     end
 
-    if result.after[1] and result.after[1] ~= vim.NIL then
-        local line_idx = tostring(base_line)
+    for i, item in ipairs(result.after) do
+        local line_idx = tostring(base_line + i - 1)
 
-        renderer.insert_line(result.after[1], "context")
-        renderer.set_line_idx(line_idx)
-    end
-    if result.after[2] and result.after[2] ~= vim.NIL then
-        local line_idx = tostring(base_line + 1)
-
-        renderer.insert_line(result.after[2], "context")
+        renderer.insert_line(item, "context")
         renderer.set_line_idx(line_idx)
     end
 end
