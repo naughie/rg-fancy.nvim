@@ -24,7 +24,9 @@ M.results = {
                 api.nvim_set_option_value("modifiable", false, { buf = buf })
             end)
 
-            ui.main.open_float()
+            ui.main.open_float(function(win)
+                vim.api.nvim_set_option_value("cursorline", true, { win = win })
+            end)
         end
     end,
 
