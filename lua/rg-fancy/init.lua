@@ -55,6 +55,10 @@ M.fn = {
         input.cwd = cwd
         ui.results.set(results, input)
     end,
+
+    open_item_current = ui.results.open_item_current,
+    goto_prev_item_line = ui.results.goto_prev_item_line,
+    goto_next_item_line = ui.results.goto_next_item_line,
 }
 
 local function define_keymaps_wrap(args, default_opts)

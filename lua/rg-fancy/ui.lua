@@ -42,6 +42,37 @@ M.results = {
         if not buf then return end
         render.results(buf, new_results, input)
     end,
+
+    open_item_current = function()
+        local item = render.manipulate.results.get_item_current()
+        if not item or not item.path then return end
+
+        local path = vim.fn.fnameescape(item.path)
+
+        myui.close_all()
+        local ok = myui.open_file_into_last_active_win(path)
+        if not ok then
+            myui.open_file_into_current_win(path)
+        end
+
+        if item.base_line then
+            api.nvim_win_set_cursor(0, { item.base_line, 0 })
+        end
+    end,
+    goto_prev_item_line = function()
+        local win = ui.main.get_win()
+        if not win then return end
+        local row = render.manipulate.results.get_prev_item_line()
+        if not row then return end
+        api.nvim_win_set_cursor(win, { row, 0 })
+    end,
+    goto_next_item_line = function()
+        local win = ui.main.get_win()
+        if not win then return end
+        local row = render.manipulate.results.get_next_item_line()
+        if not row then return end
+        api.nvim_win_set_cursor(win, { row, 0 })
+    end,
 }
 
 M.input = {

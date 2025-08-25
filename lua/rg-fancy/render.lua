@@ -29,24 +29,32 @@ function M.input(buf)
     })
 end
 
-local function create_file_renderer(buf)
+local function create_result_renderer(buf)
     local lines = {}
     local exts = {}
 
+    local inner_states = { path = nil, base_line = nil }
+
     local max_line_idx_width = 0
 
+    local insert_line = function(line, hl_group)
+        table.insert(lines, line)
+        if hl_group then
+            table.insert(exts, {
+                start_line = #lines - 1,
+                end_line = #lines - 1,
+                start_col = 0,
+                end_col = string.len(line),
+                hl_group = hl_group,
+            })
+        end
+    end
+
     return {
-        insert_line = function(line, hl_group)
-            table.insert(lines, line)
-            if hl_group then
-                table.insert(exts, {
-                    start_line = #lines - 1,
-                    end_line = #lines - 1,
-                    start_col = 0,
-                    end_col = string.len(line),
-                    hl_group = hl_group,
-                })
-            end
+        insert_line = insert_line,
+
+        set_base_line_idx = function(line_idx)
+            inner_states.base_line = line_idx
         end,
 
         set_line_idx = function(line_idx, cursor)
@@ -66,6 +74,33 @@ local function create_file_renderer(buf)
 
             local line_idx_width = vim.fn.strwidth(line_idx)
             max_line_idx_width = math.max(max_line_idx_width, line_idx_width)
+        end,
+
+        set_path = function(path, cwd)
+            local trunc = path
+            if string.find(path, cwd, 1, true) == 1 then
+                trunc = string.sub(path, #cwd + 2)
+            end
+            insert_line(" \u{f4ec} " .. trunc, "path")
+            inner_states.path = path
+        end,
+
+        update_states = function(total_lines)
+            local current_states = states.results.get()
+            if current_states then
+                current_states.items[total_lines] = {
+                    path = inner_states.path,
+                    base_line = inner_states.base_line,
+                }
+                current_states.final_idx = total_lines
+            else
+                local new_states = { items = {}, final_idx = total_lines }
+                new_states.items[total_lines] = {
+                    path = inner_states.path,
+                    base_line = inner_states.base_line,
+                }
+                states.results.set(new_states)
+            end
         end,
 
         append_after = function(total_lines)
@@ -94,17 +129,9 @@ local function create_file_renderer(buf)
     }
 end
 
-local function render_result_path(path, renderer, input)
-    local trunc = path
-    if string.find(path, input.cwd, 1, true) == 1 then
-        trunc = string.sub(path, #input.cwd + 2)
-    end
-    renderer.insert_line(" \u{f4ec} " .. trunc, "path")
-end
-
 local function render_error(result, renderer, input)
     if result.path and result.path ~= vim.NIL then
-        render_result_path(result.path, renderer, input)
+        renderer.set_path(result.path, input.cwd)
     end
 
     renderer.insert_line("")
@@ -112,11 +139,12 @@ local function render_error(result, renderer, input)
 end
 
 local function render_matched(result, renderer, input)
-    render_result_path(result.path, renderer, input)
+    renderer.set_path(result.path, input.cwd)
 
     local base_line = nil
     if result.line_idx and result.line_idx ~= vim.NIL then
         base_line = result.line_idx
+        renderer.set_base_line_idx(base_line)
     end
 
     renderer.insert_line("")
@@ -150,7 +178,7 @@ local function render_matched(result, renderer, input)
     end
 end
 
-local function render_header(buf, results, input, win_width)
+local function render_header(buf, results, input)
     local count = 0
     for _, result in ipairs(results) do
         if not result.error or result.error == vim.NIL then
@@ -177,16 +205,15 @@ local function render_header(buf, results, input, win_width)
 end
 
 function M.results(buf, results, input)
-    states.results.set(results)
-
     local win_width = api.nvim_win_get_width(0)
 
     api.nvim_set_option_value("modifiable", true, { buf = buf })
 
     hl.clear_extmarks(buf)
-    local total_lines = render_header(buf, results, input, win_width)
+    states.results.clear()
+    local total_lines = render_header(buf, results, input)
     for _, result in ipairs(results) do
-        local renderer = create_file_renderer(buf)
+        local renderer = create_result_renderer(buf)
 
         local sep = string.rep("─", win_width)
         renderer.insert_line(sep, "separator")
@@ -197,6 +224,7 @@ function M.results(buf, results, input)
             render_matched(result, renderer, input)
         end
 
+        renderer.update_states(total_lines)
         total_lines = renderer.append_after(total_lines)
     end
 
@@ -228,6 +256,50 @@ M.manipulate = {
                 path = lines[1],
                 pattern = lines[2],
             }
+        end,
+    },
+
+    results = {
+        get_item_current = function()
+            local row = api.nvim_win_get_cursor(0)[1] - 1
+            local current_states = states.results.get()
+            if not current_states then return end
+
+            for i = row, 0, -1 do
+                local on_row = current_states.items[i]
+                if on_row then return on_row end
+            end
+        end,
+
+        get_prev_item_line = function()
+            local row = api.nvim_win_get_cursor(0)[1] - 1
+            local current_states = states.results.get()
+            if not current_states then return end
+
+            local found_current = false
+            for i = row, 0, -1 do
+                local on_row = current_states.items[i]
+                if on_row then
+                    if found_current then
+                        return i + 2
+                    else
+                        found_current = true
+                    end
+                end
+            end
+        end,
+
+        get_next_item_line = function()
+            local row = api.nvim_win_get_cursor(0)[1]
+            local current_states = states.results.get()
+            if not current_states then return end
+
+            for i = row, current_states.final_idx do
+                local on_row = current_states.items[i]
+                if on_row then
+                    return i + 2
+                end
+            end
         end,
     },
 }
