@@ -82,6 +82,13 @@ Once spawning you can grep-search.
 
                         -- Move to the grep-input window if it already exists.
                         { 'n', '<C-j>', 'focus_input' },
+
+                        -- Open a file:line_nr of the grep result under the cursor line.
+                        { 'n', '<CR>', 'open_item_current' },
+
+                        -- Go to the next/previous grep result.
+                        { 'n', 'j', 'goto_next_item_line' },
+                        { 'n', 'k', 'goto_prev_item_line' },
                     },
 
                     -- Keymaps on a grep-input window, opened by open_input or open_and_ins_input
