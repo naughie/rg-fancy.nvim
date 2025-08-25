@@ -204,8 +204,8 @@ local function render_header(buf, results, input)
     return #header
 end
 
-function M.results(buf, results, input)
-    local win_width = api.nvim_win_get_width(0)
+function M.results(buf, win, results, input)
+    local win_width = api.nvim_win_get_width(win)
 
     api.nvim_set_option_value("modifiable", true, { buf = buf })
 
@@ -305,7 +305,16 @@ M.manipulate = {
 }
 
 M.props = {
-    input_geom = { height = 2 },
+    input_geom = {
+        width = function() return math.floor(api.nvim_get_option("columns") * 0.25) end,
+        height = 2,
+        col = function(dim)
+            return math.floor((api.nvim_get_option("columns") - dim.companion.width) / 2)
+        end,
+        row = function(dim)
+            return math.floor((api.nvim_get_option("lines") - dim.companion.height) / 2)
+        end,
+    },
 }
 
 return M

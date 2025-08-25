@@ -42,7 +42,9 @@ M.results = {
     set = function(new_results, input)
         local buf = ui.main.get_buf()
         if not buf then return end
-        render.results(buf, new_results, input)
+        local win = ui.main.get_win()
+        if not win then return end
+        render.results(buf, win, new_results, input)
     end,
 
     open_item_current = function()
