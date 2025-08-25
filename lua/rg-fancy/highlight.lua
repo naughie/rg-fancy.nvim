@@ -43,11 +43,14 @@ M.set_extmark = {}
 
 for key, hl in pairs(hl_names) do
     M.set_extmark[key] = function(buf, range)
-        api.nvim_buf_set_extmark(buf, ns, range.start_line, range.start_col, {
+        local opts = {
             end_row = range.end_line,
             end_col = range.end_col,
             hl_group = hl,
-        })
+        }
+        if range.hl_eol then opts.hl_eol = true end
+
+        api.nvim_buf_set_extmark(buf, ns, range.start_line, range.start_col, opts)
     end
 end
 

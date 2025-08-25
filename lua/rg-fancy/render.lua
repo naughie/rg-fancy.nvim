@@ -164,18 +164,13 @@ local function render_header(buf, results, input, win_width)
         "    \u{f034e} Path \u{f061} " .. input.path,
         "    \u{f0451} Pattern \u{f061} " .. input.pattern,
     }
-
-    local rendered = {}
-    for _, header_line in ipairs(header) do
-        local rest = string.rep(" ", win_width - vim.fn.strwidth(header_line))
-        table.insert(rendered, header_line .. rest)
-    end
-    api.nvim_buf_set_lines(buf, 0, -1, false,  rendered)
+    api.nvim_buf_set_lines(buf, 0, -1, false,  header)
     hl.set_extmark.header(buf, {
         start_line = 0,
         end_line = #header,
         start_col = 0,
         end_col = 0,
+        hl_eol = true,
     })
 
     return #header
