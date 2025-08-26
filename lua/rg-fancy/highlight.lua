@@ -10,7 +10,7 @@ local default_hl = {
     line_idx = { link = "LineNr" },
     cursor_line_idx = { link = "CursorLineNr" },
     context = { link = "Comment" },
-    matched = { link = "Visual" },
+    matched = { link = "Search" },
     error = { link = "Error" },
     separator = { link = "FloatBorder" },
     header = { link = "Normal" },
