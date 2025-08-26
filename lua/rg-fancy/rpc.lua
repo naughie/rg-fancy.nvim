@@ -31,8 +31,8 @@ function M.register(plugin_dir, new_ns, context_length)
 end
 
 M.call = {
-    grep = function(cwd, path, pattern)
-        return rpc.request("grep", cwd, path, pattern)
+    grep = function(cwd, path, pattern, glob)
+        return rpc.request("grep", cwd, path, pattern, glob)
     end,
 }
 

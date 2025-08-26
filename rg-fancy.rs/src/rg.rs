@@ -3,7 +3,10 @@ use grep::searcher::{Searcher, Sink, SinkContext, SinkMatch};
 
 use std::path::Path;
 
-fn build_walker(path: &Path) -> impl Iterator<Item = Result<ignore::DirEntry, ignore::Error>> {
+fn build_walker<'a>(
+    path: &Path,
+    glob: impl Iterator<Item = &'a str>,
+) -> impl Iterator<Item = Result<ignore::DirEntry, ignore::Error>> {
     use ignore::WalkBuilder;
 
     let mut builder = WalkBuilder::new(path);
@@ -15,6 +18,9 @@ fn build_walker(path: &Path) -> impl Iterator<Item = Result<ignore::DirEntry, ig
         .hidden(false);
     let mut overrides = ignore::overrides::OverrideBuilder::new(path);
     overrides.add("!**/.git").ok();
+    for glob in glob {
+        overrides.add(glob).ok();
+    }
     if let Ok(overrides) = overrides.build() {
         builder.overrides(overrides);
     }
@@ -484,9 +490,10 @@ impl<const CONTEXT_LENGTH: usize> Sink for RgResults<CONTEXT_LENGTH> {
     }
 }
 
-pub fn search_dir<const CONTEXT_LENGTH: usize>(
+pub fn search_dir<'a, const CONTEXT_LENGTH: usize>(
     dir: &Path,
     pattern: &str,
+    glob: impl Iterator<Item = &'a str>,
 ) -> Option<impl Iterator<Item = Result<(RgResults<CONTEXT_LENGTH>, Option<RgErr>), RgErr>>> {
     struct RgIter<W, const CONTEXT_LENGTH: usize> {
         matcher: RegexMatcher,
@@ -524,7 +531,7 @@ pub fn search_dir<const CONTEXT_LENGTH: usize>(
 
     let matcher = build_matcher(pattern).ok()?;
     let searcher = build_searcher::<CONTEXT_LENGTH>();
-    let walker = build_walker(dir);
+    let walker = build_walker(dir, glob);
 
     Some(RgIter {
         matcher,

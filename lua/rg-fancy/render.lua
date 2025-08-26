@@ -12,18 +12,24 @@ local api = vim.api
 
 local virt_ns = api.nvim_create_namespace("NaughieRgFancyVirt")
 
+local input_height = 3
 function M.input(buf)
     api.nvim_buf_clear_namespace(buf, virt_ns, 0, -1)
 
-    api.nvim_buf_set_lines(buf, 0, -1, false, { ".", "" })
+    api.nvim_buf_set_lines(buf, 0, -1, false, { ".", "", "" })
 
     api.nvim_buf_set_extmark(buf, virt_ns, 0, 0, {
-        virt_text = { { " \u{eb05} Path    \u{f101} ", hl.hl_groups.input_hint } },
+        virt_text = { { " \u{eb05} Path             \u{f101} ", hl.hl_groups.input_hint } },
         virt_text_pos = "inline",
         right_gravity = false,
     })
     api.nvim_buf_set_extmark(buf, virt_ns, 1, 0, {
-        virt_text = { { " \u{eb05} Pattern \u{f101} ", hl.hl_groups.input_hint } },
+        virt_text = { { " \u{eb05} Glob (whitelist) \u{f101} ", hl.hl_groups.input_hint } },
+        virt_text_pos = "inline",
+        right_gravity = false,
+    })
+    api.nvim_buf_set_extmark(buf, virt_ns, 2, 0, {
+        virt_text = { { " \u{eb05} Pattern          \u{f101} ", hl.hl_groups.input_hint } },
         virt_text_pos = "inline",
         right_gravity = false,
     })
@@ -274,7 +280,7 @@ M.manipulate = {
             local curr_pos = api.nvim_win_get_cursor(win)
 
             local next_row = curr_pos[1] + 1
-            if next_row > 2 then
+            if next_row > input_height then
                 next_row = 1
             end
 
@@ -286,12 +292,18 @@ M.manipulate = {
         end,
 
         get = function(buf)
-            local lines = api.nvim_buf_get_lines(buf, 0, 2, false)
-            if #lines ~= 2 then return end
+            local lines = api.nvim_buf_get_lines(buf, 0, input_height, false)
+            if #lines ~= input_height then return end
+
+            local glob = {}
+            for item in string.gmatch(lines[2], "%S+") do
+                table.insert(glob, item)
+            end
 
             return {
                 path = lines[1],
-                pattern = lines[2],
+                pattern = lines[3],
+                glob = glob,
             }
         end,
     },
@@ -352,7 +364,7 @@ M.manipulate = {
 M.props = {
     input_geom = {
         width = function() return math.floor(api.nvim_get_option("columns") * 0.25) end,
-        height = 2,
+        height = input_height,
         col = function(dim)
             return math.floor((api.nvim_get_option("columns") - dim.companion.width) / 2)
         end,

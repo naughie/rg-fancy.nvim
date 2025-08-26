@@ -9,8 +9,12 @@ use nvim_router::nvim_rs::{Neovim, Value};
 use std::path::Path;
 use std::path::PathBuf;
 
-fn search_results<const CONTEXT_LENGTH: usize>(dir: &Path, pattern: &str) -> Value {
-    let Some(results) = rg::search_dir::<CONTEXT_LENGTH>(dir, pattern) else {
+fn search_results<'a, const CONTEXT_LENGTH: usize>(
+    dir: &Path,
+    pattern: &str,
+    glob: impl Iterator<Item = &'a str>,
+) -> Value {
+    let Some(results) = rg::search_dir::<CONTEXT_LENGTH>(dir, pattern, glob) else {
         return Value::Nil;
     };
     rpc::to_values::<CONTEXT_LENGTH>(results)
@@ -47,10 +51,14 @@ impl<W: NeovimWriter, const CONTEXT_LENGTH: usize> nvim_router::NeovimHandler<W>
             let Some(pattern) = args.next_string() else {
                 return Ok(Value::Nil);
             };
+            let Some(glob) = args.next_array() else {
+                return Ok(Value::Nil);
+            };
 
             let path = resolve_path(&cwd, &path);
+            let glob = glob.iter().filter_map(|glob| glob.as_str());
 
-            Ok(search_results::<CONTEXT_LENGTH>(&path, &pattern))
+            Ok(search_results::<CONTEXT_LENGTH>(&path, &pattern, glob))
         } else {
             Ok(Value::Nil)
         }

@@ -49,7 +49,7 @@ M.fn = {
         local input = ui.input.get()
         if not input then return end
         local cwd = vim.uv.cwd()
-        local results = rpc.call.grep(cwd, input.path, input.pattern)
+        local results = rpc.call.grep(cwd, input.path, input.pattern, input.glob)
         if not results or results == vim.NIL then return end
 
         input.cwd = cwd
