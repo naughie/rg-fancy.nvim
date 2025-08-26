@@ -66,6 +66,7 @@ pub fn to_values<const CONTEXT_LENGTH: usize>(
     search_results: impl Iterator<Item = Result<(RgResults<CONTEXT_LENGTH>, Option<RgErr>), RgErr>>,
 ) -> Value {
     let mut rpc_values = Vec::new();
+    let mut errors = Vec::new();
 
     for result in search_results {
         match result {
@@ -75,12 +76,14 @@ pub fn to_values<const CONTEXT_LENGTH: usize>(
                     rpc_values.push(result_value(result, &path));
                 }
                 if let Some(e) = err {
-                    rpc_values.push(err_value(e, Some(&path)));
+                    errors.push(err_value(e, Some(&path)));
                 }
             }
-            Err(e) => rpc_values.push(err_value(e, None)),
+            Err(e) => errors.push(err_value(e, None)),
         }
     }
+
+    rpc_values.extend(errors);
 
     Value::Array(rpc_values)
 }
