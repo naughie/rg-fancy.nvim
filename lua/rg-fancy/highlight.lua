@@ -9,6 +9,7 @@ local default_hl = {
     path = { link = "Directory" },
     line_idx = { link = "LineNr" },
     cursor_line_idx = { link = "CursorLineNr" },
+    count = { link = "Comment" },
     context = { link = "Comment" },
     matched = { link = "Search" },
     error = { link = "Error" },
@@ -65,6 +66,13 @@ M.set_extmark.cursor_line_idx = function(buf, virt_text, to)
     api.nvim_buf_set_extmark(buf, ns, to, 0, {
         virt_text = { { virt_text, hl_names.cursor_line_idx } },
         virt_text_pos = "inline",
+        right_gravity = false,
+    })
+end
+M.set_extmark.count = function(buf, virt_text, to)
+    api.nvim_buf_set_extmark(buf, ns, to, 0, {
+        virt_text = { { virt_text, hl_names.cursor_line_idx } },
+        virt_text_pos = "eol",
         right_gravity = false,
     })
 end

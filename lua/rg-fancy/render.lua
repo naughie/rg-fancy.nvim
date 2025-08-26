@@ -80,13 +80,22 @@ local function create_result_renderer(buf)
             max_line_idx_width = math.max(max_line_idx_width, line_idx_width)
         end,
 
-        set_path = function(path, cwd)
+        set_path = function(path, cwd, count)
             local trunc = path
             if string.find(path, cwd, 1, true) == 1 then
                 trunc = string.sub(path, #cwd + 2)
             end
             insert_line(" \u{f4ec} " .. trunc, "path")
             inner_states.path = path
+
+            if count then
+                table.insert(exts, {
+                    current = count.current,
+                    total = count.total,
+                    to = #lines - 1,
+                    hl_group = "count",
+                })
+            end
         end,
 
         update_states = function(total_lines)
@@ -113,6 +122,9 @@ local function create_result_renderer(buf)
                         virt_text = "   " .. virt_text
                     end
                     hl.set_extmark[ext.hl_group](buf, virt_text, ext.to + total_lines)
+                elseif ext.hl_group == "count" then
+                    local virt_text = string.format("  \u{f0d08} (%d/%d)", ext.current, ext.total)
+                    hl.set_extmark[ext.hl_group](buf, virt_text, ext.to + total_lines)
                 else
                     hl.set_extmark[ext.hl_group](buf, {
                         start_line = ext.start_line + total_lines,
@@ -136,8 +148,8 @@ local function render_error(result, renderer, input)
     renderer.insert_line(" \u{f421} " .. result.error, "error")
 end
 
-local function render_matched(result, renderer, input)
-    renderer.set_path(result.path, input.cwd)
+local function render_matched(result, renderer, input, count)
+    renderer.set_path(result.path, input.cwd, count)
 
     local base_line = nil
     if result.line_idx and result.line_idx ~= vim.NIL then
@@ -224,7 +236,7 @@ local function render_header(buf, results, input)
         hl_eol = true,
     })
 
-    return #header
+    return #header, count
 end
 
 function M.results(buf, win, results, input)
@@ -234,7 +246,8 @@ function M.results(buf, win, results, input)
 
     hl.clear_extmarks(buf)
     states.results.clear()
-    local total_lines = render_header(buf, results, input)
+    local total_lines, num_matches = render_header(buf, results, input)
+    local count = 0
     for _, result in ipairs(results) do
         local renderer = create_result_renderer(buf)
 
@@ -244,7 +257,8 @@ function M.results(buf, win, results, input)
         if result.error and result.error ~= vim.NIL then
             render_error(result, renderer, input)
         else
-            render_matched(result, renderer, input)
+            count = count + 1
+            render_matched(result, renderer, input, { current = count, total = num_matches })
         end
 
         renderer.update_states(total_lines)
