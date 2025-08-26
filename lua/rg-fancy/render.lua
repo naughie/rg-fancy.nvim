@@ -33,7 +33,7 @@ local function create_result_renderer(buf)
     local lines = {}
     local exts = {}
 
-    local inner_states = { path = nil, base_line = nil }
+    local inner_states = { path = nil, base_line = nil, offset = nil }
 
     local max_line_idx_width = 0
 
@@ -55,6 +55,10 @@ local function create_result_renderer(buf)
 
         set_base_line_idx = function(line_idx)
             inner_states.base_line = line_idx
+        end,
+
+        set_offset = function(offset)
+            inner_states.offset = offset
         end,
 
         set_line_idx = function(line_idx, cursor)
@@ -88,17 +92,11 @@ local function create_result_renderer(buf)
         update_states = function(total_lines)
             local current_states = states.results.get()
             if current_states then
-                current_states.items[total_lines] = {
-                    path = inner_states.path,
-                    base_line = inner_states.base_line,
-                }
+                current_states.items[total_lines] = inner_states
                 current_states.final_idx = total_lines
             else
                 local new_states = { items = {}, final_idx = total_lines }
-                new_states.items[total_lines] = {
-                    path = inner_states.path,
-                    base_line = inner_states.base_line,
-                }
+                new_states.items[total_lines] = inner_states
                 states.results.set(new_states)
             end
         end,
@@ -149,16 +147,19 @@ local function render_matched(result, renderer, input)
 
     renderer.insert_line("")
 
+    local count_before = 0
     for i = #result.before, 1, -1 do
         local line_idx = tostring(base_line - i)
         local item = result.before[i]
         if item and item ~= vim.NIL then
             renderer.insert_line(item, "context")
             renderer.set_line_idx(line_idx)
+            count_before = count_before + 1
         end
     end
 
     if result.matched and result.matched ~= vim.NIL then
+        renderer.set_offset(count_before + 3)
         for _, matched_line in ipairs(result.matched) do
             local line_idx = tostring(base_line)
 
@@ -281,7 +282,11 @@ M.manipulate = {
                 local on_row = current_states.items[i]
                 if on_row then
                     if found_current then
-                        return i + 2
+                        if on_row.offset then
+                            return i + 1 + on_row.offset
+                        else
+                            return i + 2
+                        end
                     else
                         found_current = true
                     end
@@ -297,7 +302,11 @@ M.manipulate = {
             for i = row, current_states.final_idx do
                 local on_row = current_states.items[i]
                 if on_row then
-                    return i + 2
+                    if on_row.offset then
+                        return i + 1 + on_row.offset
+                    else
+                        return i + 2
+                    end
                 end
             end
         end,
