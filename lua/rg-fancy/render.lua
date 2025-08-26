@@ -191,19 +191,27 @@ local function render_header(buf, results, input)
     local matches_len = vim.fn.strwidth(matches_str)
     local errors_str = tostring(#results - count)
     local errors_len = vim.fn.strwidth(errors_str)
-    local max_len =math.max(matches_len, errors_len)
+    local max_stat_len =math.max(matches_len, errors_len)
 
-    if matches_len ~= max_len then
-        matches_str = string.rep(" ", max_len - matches_len) .. matches_str
+    if matches_len ~= max_stat_len then
+        matches_str = string.rep(" ", max_stat_len - matches_len) .. matches_str
     end
-    if errors_len ~= max_len then
-        errors_str = string.rep(" ", max_len - errors_len) .. errors_str
+    if errors_len ~= max_stat_len then
+        errors_str = string.rep(" ", max_stat_len - errors_len) .. errors_str
     end
+
+    local max_width = 13 + math.max(
+        max_stat_len,
+        vim.fn.strwidth(input.path),
+        vim.fn.strwidth(input.pattern)
+    )
+    local rule = string.rep("─", max_width + 2)
 
     local header = {
         "\u{e370} Grep summary\u{e370}",
         "    \u{f422} #matches \u{f061} " .. matches_str,
         "    \u{f421} #errors  \u{f061} " .. errors_str,
+        "   " .. rule,
         "    \u{f034e} Path     \u{f061} " .. input.path,
         "    \u{f0451} Pattern  \u{f061} " .. input.pattern,
     }
