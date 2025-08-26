@@ -187,11 +187,25 @@ local function render_header(buf, results, input)
         end
     end
 
+    local matches_str = tostring(count)
+    local matches_len = vim.fn.strwidth(matches_str)
+    local errors_str = tostring(#results - count)
+    local errors_len = vim.fn.strwidth(errors_str)
+    local max_len =math.max(matches_len, errors_len)
+
+    if matches_len ~= max_len then
+        matches_str = string.rep(" ", max_len - matches_len) .. matches_str
+    end
+    if errors_len ~= max_len then
+        errors_str = string.rep(" ", max_len - errors_len) .. errors_str
+    end
+
     local header = {
         "\u{e370} Grep summary\u{e370}",
-        "    \u{f422} #matches \u{f061} " .. tostring(count),
-        "    \u{f034e} Path \u{f061} " .. input.path,
-        "    \u{f0451} Pattern \u{f061} " .. input.pattern,
+        "    \u{f422} #matches \u{f061} " .. matches_str,
+        "    \u{f421} #errors  \u{f061} " .. errors_str,
+        "    \u{f034e} Path     \u{f061} " .. input.path,
+        "    \u{f0451} Pattern  \u{f061} " .. input.pattern,
     }
     api.nvim_buf_set_lines(buf, 0, -1, false,  header)
     hl.set_extmark.header(buf, {
