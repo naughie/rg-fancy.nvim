@@ -6,6 +6,7 @@ local ns = api.nvim_create_namespace("NaughieRgFancyHl")
 
 local default_hl = {
     input_hint = { link = "Comment" },
+    input_hint_notice = { link = "Comment" },
     path = { link = "Directory" },
     line_idx = { link = "LineNr" },
     cursor_line_idx = { link = "CursorLineNr" },
@@ -19,9 +20,11 @@ local default_hl = {
 
 local hl_names = {
     input_hint = "RgFancyInputHint",
+    input_hint_notice = "RgFancyInputHintNotice",
     path = "RgFancyPath",
     line_idx = "RgFancyLineNr",
     cursor_line_idx = "RgFancyCursorLineNr",
+    count = "RgFancyCount",
     context = "RgFancyContext",
     matched = "RgFancyMatched",
     error = "RgFancyError",
@@ -71,7 +74,7 @@ M.set_extmark.cursor_line_idx = function(buf, virt_text, to)
 end
 M.set_extmark.count = function(buf, virt_text, to)
     api.nvim_buf_set_extmark(buf, ns, to, 0, {
-        virt_text = { { virt_text, hl_names.cursor_line_idx } },
+        virt_text = { { virt_text, hl_names.count } },
         virt_text_pos = "eol",
         right_gravity = false,
     })

@@ -24,14 +24,17 @@ function M.input(buf)
         right_gravity = false,
     })
     api.nvim_buf_set_extmark(buf, virt_ns, 1, 0, {
+        virt_text = { { " \u{eb05} Pattern          \u{f101} ", hl.hl_groups.input_hint } },
+        virt_text_pos = "inline",
+        right_gravity = false,
+    })
+    api.nvim_buf_set_extmark(buf, virt_ns, 2, 0, {
         virt_text = { { " \u{eb05} Glob (whitelist) \u{f101} ", hl.hl_groups.input_hint } },
         virt_text_pos = "inline",
         right_gravity = false,
     })
     api.nvim_buf_set_extmark(buf, virt_ns, 2, 0, {
-        virt_text = { { " \u{eb05} Pattern          \u{f101} ", hl.hl_groups.input_hint } },
-        virt_text_pos = "inline",
-        right_gravity = false,
+        virt_lines = { { { '     \u{f1fd} Space separated glob, defaults to !**/.git', hl.hl_groups.input_hint_notice } } },
     })
 end
 
@@ -218,10 +221,14 @@ local function render_header(buf, results, input)
         errors_str = string.rep(" ", max_stat_len - errors_len) .. errors_str
     end
 
+    local glob = table.concat(input.glob, ' ')
+    if glob == "" then glob = "(default)" end
+
     local max_width = 13 + math.max(
         max_stat_len,
         vim.fn.strwidth(input.path),
-        vim.fn.strwidth(input.pattern)
+        vim.fn.strwidth(input.pattern),
+        vim.fn.strwidth(glob)
     )
     local rule = string.rep("─", max_width + 2)
 
@@ -232,6 +239,7 @@ local function render_header(buf, results, input)
         "   " .. rule,
         "    \u{f034e} Path     \u{f061} " .. input.path,
         "    \u{f0451} Pattern  \u{f061} " .. input.pattern,
+        "    \u{eb01} Glob     \u{f061} " .. glob,
     }
     api.nvim_buf_set_lines(buf, 0, -1, false,  header)
     hl.set_extmark.header(buf, {
@@ -296,13 +304,13 @@ M.manipulate = {
             if #lines ~= input_height then return end
 
             local glob = {}
-            for item in string.gmatch(lines[2], "%S+") do
+            for item in string.gmatch(lines[3], "%S+") do
                 table.insert(glob, item)
             end
 
             return {
                 path = lines[1],
-                pattern = lines[3],
+                pattern = lines[2],
                 glob = glob,
             }
         end,
@@ -364,7 +372,7 @@ M.manipulate = {
 M.props = {
     input_geom = {
         width = function() return math.floor(api.nvim_get_option("columns") * 0.25) end,
-        height = input_height,
+        height = input_height + 1,
         col = function(dim)
             return math.floor((api.nvim_get_option("columns") - dim.companion.width) / 2)
         end,
