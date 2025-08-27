@@ -46,6 +46,17 @@ local function create_result_renderer(buf)
 
     local max_line_idx_width = 0
 
+    local make_line_idx_virt_text = function(line_idx, cursor)
+        local pad = string.rep(" ", max_line_idx_width - vim.fn.strwidth(line_idx))
+        local virt_text = pad .. line_idx .. "│  "
+        if cursor then
+            virt_text = " \u{ee83} " .. virt_text
+        else
+            virt_text = "   " .. virt_text
+        end
+        return virt_text
+    end
+
     local insert_line = function(line, hl_group)
         table.insert(lines, line)
         if hl_group then
@@ -59,6 +70,15 @@ local function create_result_renderer(buf)
         end
     end
 
+    local insert_virt_text = function(virt_text, hl_group, opts)
+        local ext_args = opts
+        ext_args.virt_text = virt_text
+        ext_args.to = #lines - 1
+        ext_args.hl_group = hl_group
+
+        table.insert(exts, ext_args)
+    end
+
     return {
         insert_line = insert_line,
 
@@ -70,20 +90,20 @@ local function create_result_renderer(buf)
             inner_states.offset = offset
         end,
 
+        set_virt_text = function(virt_text, hl_group, opts)
+            insert_virt_text(virt_text, hl_group, opts or { pos = "inline", col = 0 })
+        end,
+
         set_line_idx = function(line_idx, cursor)
-            if cursor then
-                table.insert(exts, {
-                    line_idx = line_idx,
-                    to = #lines - 1,
-                    hl_group = "cursor_line_idx",
-                })
-            else
-                table.insert(exts, {
-                    line_idx = line_idx,
-                    to = #lines - 1,
-                    hl_group = "line_idx",
-                })
-            end
+            local hl_group = "line_idx"
+            if cursor then hl_group = "cursor_line_idx" end
+
+            insert_virt_text(function()
+                return make_line_idx_virt_text(line_idx, cursor)
+            end, hl_group, {
+                pos = "inline",
+                col = 0,
+            })
 
             local line_idx_width = vim.fn.strwidth(line_idx)
             max_line_idx_width = math.max(max_line_idx_width, line_idx_width)
@@ -94,15 +114,18 @@ local function create_result_renderer(buf)
             if string.find(path, cwd, 1, true) == 1 then
                 trunc = string.sub(path, #cwd + 2)
             end
-            insert_line(" \u{f4ec} " .. trunc, "path")
+            insert_line(trunc, "path")
             inner_states.path = path
+            insert_virt_text(" \u{f4ec} ", "path", {
+                pos = "inline",
+                col = 0,
+            })
 
             if count then
-                table.insert(exts, {
-                    current = count.current,
-                    total = count.total,
-                    to = #lines - 1,
-                    hl_group = "count",
+                local virt_text = string.format("  \u{f0d08} (%d/%d)", count.current, count.total)
+                insert_virt_text(virt_text, "count", {
+                    pos = "eol",
+                    col = 0,
                 })
             end
         end,
@@ -122,18 +145,18 @@ local function create_result_renderer(buf)
         append_after = function(total_lines)
             api.nvim_buf_set_lines(buf, total_lines, -1, false, lines)
             for _, ext in ipairs(exts) do
-                if ext.hl_group == "line_idx" or ext.hl_group == "cursor_line_idx" then
-                    local pad = string.rep(" ", max_line_idx_width - vim.fn.strwidth(ext.line_idx))
-                    local virt_text = pad .. ext.line_idx .. "│  "
-                    if ext.hl_group == "cursor_line_idx" then
-                        virt_text = " \u{ee83} " .. virt_text
-                    else
-                        virt_text = "   " .. virt_text
+                if ext.virt_text then
+                    local virt_text = ext.virt_text
+                    if type(ext.virt_text) == "function" then
+                        virt_text = ext.virt_text()
                     end
-                    hl.set_extmark[ext.hl_group](buf, virt_text, ext.to + total_lines)
-                elseif ext.hl_group == "count" then
-                    local virt_text = string.format("  \u{f0d08} (%d/%d)", ext.current, ext.total)
-                    hl.set_extmark[ext.hl_group](buf, virt_text, ext.to + total_lines)
+
+                    hl.set_extmark[ext.hl_group](buf, {
+                        virt_text = virt_text,
+                        pos = ext.pos,
+                        line = ext.to + total_lines,
+                        col = ext.col,
+                    })
                 else
                     hl.set_extmark[ext.hl_group](buf, {
                         start_line = ext.start_line + total_lines,
@@ -266,7 +289,8 @@ function M.results(buf, win, results, input)
         local renderer = create_result_renderer(buf)
 
         local sep = string.rep("─", win_width)
-        renderer.insert_line(sep, "separator")
+        renderer.insert_line("")
+        renderer.set_virt_text(sep, "separator")
 
         if result.error and result.error ~= vim.NIL then
             render_error(result, renderer, input)

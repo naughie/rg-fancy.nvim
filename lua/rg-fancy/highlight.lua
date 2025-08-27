@@ -46,38 +46,26 @@ end
 M.set_extmark = {}
 
 for key, hl in pairs(hl_names) do
-    M.set_extmark[key] = function(buf, range)
-        local opts = {
-            end_row = range.end_line,
-            end_col = range.end_col,
-            hl_group = hl,
-        }
-        if range.hl_eol then opts.hl_eol = true end
+    M.set_extmark[key] = function(buf, args)
+        if args.virt_text then
+            local opts = {
+                virt_text = { { args.virt_text, hl } },
+                virt_text_pos = args.pos,
+                -- right_gravity = false,
+            }
 
-        api.nvim_buf_set_extmark(buf, ns, range.start_line, range.start_col, opts)
+            api.nvim_buf_set_extmark(buf, ns, args.line, args.col, opts)
+        else
+            local opts = {
+                end_row = args.end_line,
+                end_col = args.end_col,
+                hl_group = hl,
+            }
+            if args.hl_eol then opts.hl_eol = true end
+
+            api.nvim_buf_set_extmark(buf, ns, args.start_line, args.start_col, opts)
+        end
     end
-end
-
-M.set_extmark.line_idx = function(buf, virt_text, to)
-    api.nvim_buf_set_extmark(buf, ns, to, 0, {
-        virt_text = { { virt_text, hl_names.line_idx } },
-        virt_text_pos = "inline",
-        right_gravity = false,
-    })
-end
-M.set_extmark.cursor_line_idx = function(buf, virt_text, to)
-    api.nvim_buf_set_extmark(buf, ns, to, 0, {
-        virt_text = { { virt_text, hl_names.cursor_line_idx } },
-        virt_text_pos = "inline",
-        right_gravity = false,
-    })
-end
-M.set_extmark.count = function(buf, virt_text, to)
-    api.nvim_buf_set_extmark(buf, ns, to, 0, {
-        virt_text = { { virt_text, hl_names.count } },
-        virt_text_pos = "eol",
-        right_gravity = false,
-    })
 end
 
 M.clear_extmarks = function(buf)
