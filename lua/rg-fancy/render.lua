@@ -43,12 +43,15 @@ local function create_result_renderer(buf)
     local exts = {}
 
     local inner_states = { path = nil, base_line = nil, offset = nil }
+    local line_idx_exts = {}
 
     local max_line_idx_width = 0
 
+    local states_idx = nil
+
     local make_line_idx_virt_text = function(line_idx, cursor)
         local pad = string.rep(" ", max_line_idx_width - vim.fn.strwidth(line_idx))
-        local virt_text = pad .. line_idx .. "│  "
+        local virt_text = pad .. line_idx .. "│"
         if cursor then
             virt_text = " \u{ee83} " .. virt_text
         else
@@ -98,6 +101,18 @@ local function create_result_renderer(buf)
             local hl_group = "line_idx"
             if cursor then hl_group = "cursor_line_idx" end
 
+            if cursor then
+                insert_virt_text(" ", "empty", {
+                    pos = "inline",
+                    col = 0,
+                })
+            else
+                insert_virt_text("  ", "empty", {
+                    pos = "inline",
+                    col = 0,
+                })
+            end
+
             insert_virt_text(function()
                 return make_line_idx_virt_text(line_idx, cursor)
             end, hl_group, {
@@ -107,6 +122,17 @@ local function create_result_renderer(buf)
 
             local line_idx_width = vim.fn.strwidth(line_idx)
             max_line_idx_width = math.max(max_line_idx_width, line_idx_width)
+        end,
+
+        set_tick_around = function(start_col, end_col, hl_group)
+            insert_virt_text("\u{e0b6}", hl_group, {
+                pos = "inline",
+                col = start_col,
+            })
+            insert_virt_text("\u{e0b4}", hl_group, {
+                pos = "inline",
+                col = end_col,
+            })
         end,
 
         set_path = function(path, cwd, count)
@@ -140,6 +166,13 @@ local function create_result_renderer(buf)
                 new_states.items[total_lines] = inner_states
                 states.results.set(new_states)
             end
+
+            states_idx = total_lines
+        end,
+
+        update_line_idx_states = function()
+            local current_states = states.results.get()
+            current_states.items[states_idx].line_idx_exts = line_idx_exts
         end,
 
         append_after = function(total_lines)
@@ -151,12 +184,23 @@ local function create_result_renderer(buf)
                         virt_text = ext.virt_text()
                     end
 
-                    hl.set_extmark[ext.hl_group](buf, {
+                    local ext_id = hl.set_extmark[ext.hl_group](buf, {
                         virt_text = virt_text,
                         pos = ext.pos,
                         line = ext.to + total_lines,
                         col = ext.col,
                     })
+
+                    if ext.hl_group == "line_idx" or ext.hl_group == "cursor_line_idx" then
+                        table.insert(line_idx_exts, {
+                            id = ext_id,
+                            virt_text = virt_text,
+                            pos = ext.pos,
+                            line = ext.to + total_lines,
+                            col = ext.col,
+                            hl_group = ext.hl_group,
+                        })
+                    end
                 else
                     hl.set_extmark[ext.hl_group](buf, {
                         start_line = ext.start_line + total_lines,
@@ -208,6 +252,7 @@ local function render_matched(result, renderer, input, count)
             local line_idx = tostring(base_line)
 
             renderer.insert_line(matched_line, "matched")
+            renderer.set_tick_around(0, string.len(matched_line), "matched_tick")
             renderer.set_line_idx(line_idx, true)
 
             base_line = base_line + 1
@@ -301,6 +346,7 @@ function M.results(buf, win, results, input)
 
         renderer.update_states(total_lines)
         total_lines = renderer.append_after(total_lines)
+        renderer.update_line_idx_states()
     end
 
     api.nvim_set_option_value("modifiable", false, { buf = buf })
@@ -363,9 +409,9 @@ M.manipulate = {
                 if on_row then
                     if found_current then
                         if on_row.offset then
-                            return i + 1 + on_row.offset
+                            return i + 1 + on_row.offset, on_row.line_idx_exts
                         else
-                            return i + 2
+                            return i + 2, on_row.line_idx_exts
                         end
                     else
                         found_current = true
@@ -383,9 +429,9 @@ M.manipulate = {
                 local on_row = current_states.items[i]
                 if on_row then
                     if on_row.offset then
-                        return i + 1 + on_row.offset
+                        return i + 1 + on_row.offset, on_row.line_idx_exts
                     else
-                        return i + 2
+                        return i + 2, on_row.line_idx_exts
                     end
                 end
             end

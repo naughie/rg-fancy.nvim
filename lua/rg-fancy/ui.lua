@@ -1,5 +1,6 @@
 local M = {}
 
+local hl = require("rg-fancy.highlight")
 local render = require("rg-fancy.render")
 
 local myui = require("my-ui")
@@ -14,6 +15,31 @@ local api = vim.api
 
 local augroup = api.nvim_create_augroup("NaughieRgFancyUi", { clear = true })
 
+local goto_item_line = function(fn_get_item)
+    local win = ui.main.get_win()
+    if not win then return end
+    local buf = ui.main.get_buf()
+    if not buf then return end
+
+    local row, line_idx_ext = render.manipulate.results[fn_get_item]()
+    if not row then return end
+    local curr = render.manipulate.results.get_item_current()
+
+    api.nvim_win_set_cursor(win, { row, 0 })
+
+    if line_idx_ext then
+        for _, ext in ipairs(line_idx_ext) do
+            hl.update_extmark.focus_line_idx(buf, ext)
+        end
+    end
+
+    if curr and curr.line_idx_exts then
+        for _, ext in ipairs(curr.line_idx_exts) do
+            hl.update_extmark[ext.hl_group](buf, ext)
+        end
+    end
+end
+
 M.results = {
     open = function(setup)
         if ui.main.get_win() then
@@ -25,7 +51,9 @@ M.results = {
             end)
 
             ui.main.open_float(function(win)
-                vim.api.nvim_set_option_value("cursorline", true, { win = win })
+                local local_ns = api.nvim_create_namespace("")
+                api.nvim_win_set_hl_ns(win, local_ns)
+                hl.define_matched_tick(local_ns)
             end)
         end
     end,
@@ -64,18 +92,10 @@ M.results = {
         end
     end,
     goto_prev_item_line = function()
-        local win = ui.main.get_win()
-        if not win then return end
-        local row = render.manipulate.results.get_prev_item_line()
-        if not row then return end
-        api.nvim_win_set_cursor(win, { row, 0 })
+        return goto_item_line("get_prev_item_line")
     end,
     goto_next_item_line = function()
-        local win = ui.main.get_win()
-        if not win then return end
-        local row = render.manipulate.results.get_next_item_line()
-        if not row then return end
-        api.nvim_win_set_cursor(win, { row, 0 })
+        return goto_item_line("get_next_item_line")
     end,
 }
 
