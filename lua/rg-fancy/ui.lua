@@ -6,6 +6,7 @@ local render = require("rg-fancy.render")
 local myui = require("my-ui")
 
 local ui = myui.declare_ui({
+    main = { hide_cursor = true },
     geom = {
         companion = render.props.input_geom,
     },
