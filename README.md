@@ -12,7 +12,9 @@ No [ripgrep](https://github.com/BurntSushi/ripgrep) binary is required since we 
 
 # Install
 
-After `nvim-router` detects that all of dependencies, which are specified in `opts.ns` of `nvim-router` itself, then it automatically runs `cargo build --release` and spawns a plugin-client process.
+After `nvim-router` detects that all of dependencies, which are specified in `opts.ns` of `nvim-router` itself, are `setup`'d, then it automatically runs `cargo build --release` and spawns a plugin-client process.
+
+The first build may take a long time.
 
 Once spawning you can grep-search.
 
@@ -27,7 +29,7 @@ Once spawning you can grep-search.
     { "naughie/my-ui.nvim", lazy = true },
 
     {
-        "naughie/nvim-router",
+        "naughie/nvim-router.nvim",
         lazy = false,
         opts = function(plugin)
             return {
