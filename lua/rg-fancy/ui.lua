@@ -16,15 +16,15 @@ local api = vim.api
 
 local augroup = api.nvim_create_augroup("NaughieRgFancyUi", { clear = true })
 
-local goto_item_line = function(fn_get_item)
+local goto_item_line = function(fn_get_item, current_row)
     local win = ui.main.get_win()
     if not win then return end
     local buf = ui.main.get_buf()
     if not buf then return end
 
-    local row, line_idx_ext = render.manipulate.results[fn_get_item]()
+    local row, line_idx_ext = render.manipulate.results[fn_get_item](current_row)
     if not row then return end
-    local curr = render.manipulate.results.get_item_current()
+    local curr = render.manipulate.results.get_item_current(current_row)
 
     api.nvim_win_set_cursor(win, { row, 0 })
 
@@ -74,29 +74,34 @@ M.results = {
         local win = ui.main.get_win()
         if not win then return end
         render.results(buf, win, new_results, input)
+
+        goto_item_line("get_next_item_line", 1)
     end,
 
     open_item_current = function()
-        local item = render.manipulate.results.get_item_current()
+        local row = api.nvim_win_get_cursor(0)[1]
+        local item = render.manipulate.results.get_item_current(row)
         if not item or not item.path then return end
 
         local path = vim.fn.fnameescape(item.path)
 
-        myui.close_all()
         local ok = myui.open_file_into_last_active_win(path)
         if not ok then
             myui.open_file_into_current_win(path)
         end
+        myui.close_all()
 
         if item.base_line then
             api.nvim_win_set_cursor(0, { item.base_line, 0 })
         end
     end,
     goto_prev_item_line = function()
-        return goto_item_line("get_prev_item_line")
+        local row = api.nvim_win_get_cursor(0)[1]
+        return goto_item_line("get_prev_item_line", row)
     end,
     goto_next_item_line = function()
-        return goto_item_line("get_next_item_line")
+        local row = api.nvim_win_get_cursor(0)[1]
+        return goto_item_line("get_next_item_line", row)
     end,
 }
 

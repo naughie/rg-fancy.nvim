@@ -387,24 +387,22 @@ M.manipulate = {
     },
 
     results = {
-        get_item_current = function()
-            local row = api.nvim_win_get_cursor(0)[1] - 1
+        get_item_current = function(row)
             local current_states = states.results.get()
             if not current_states then return end
 
-            for i = row, 0, -1 do
+            for i = row - 1, 0, -1 do
                 local on_row = current_states.items[i]
                 if on_row then return on_row end
             end
         end,
 
-        get_prev_item_line = function()
-            local row = api.nvim_win_get_cursor(0)[1] - 1
+        get_prev_item_line = function(row)
             local current_states = states.results.get()
             if not current_states then return end
 
             local found_current = false
-            for i = row, 0, -1 do
+            for i = row - 1, 0, -1 do
                 local on_row = current_states.items[i]
                 if on_row then
                     if found_current then
@@ -420,8 +418,7 @@ M.manipulate = {
             end
         end,
 
-        get_next_item_line = function()
-            local row = api.nvim_win_get_cursor(0)[1]
+        get_next_item_line = function(row)
             local current_states = states.results.get()
             if not current_states then return end
 
