@@ -48,6 +48,7 @@ M.results = {
         else
             ui.main.create_buf(function(buf)
                 if setup.buf then setup.buf(buf) end
+                render.header(buf, {}, { path = "", pattern = "", glob = {} })
                 api.nvim_set_option_value("modifiable", false, { buf = buf })
             end)
 

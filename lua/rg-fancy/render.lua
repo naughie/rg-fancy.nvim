@@ -320,6 +320,7 @@ local function render_header(buf, results, input)
 
     return #header, count
 end
+M.header = render_header
 
 function M.results(buf, win, results, input)
     local win_width = api.nvim_win_get_width(win)
