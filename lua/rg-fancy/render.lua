@@ -354,6 +354,14 @@ function M.results(buf, win, results, input)
 end
 
 M.manipulate = {
+    states = {
+        is_empty = function(tab)
+            local current_states = states.results.get(tab)
+            if current_states and next(current_states.items) then return end
+            return true
+        end,
+    },
+
     input = {
         move_to_next_eol = function(win, buf)
             local curr_pos = api.nvim_win_get_cursor(win)

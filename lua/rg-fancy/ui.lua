@@ -104,6 +104,8 @@ M.results = {
         local row = api.nvim_win_get_cursor(0)[1]
         return goto_item_line("get_next_item_line", row)
     end,
+
+    is_empty = render.manipulate.states.is_empty,
 }
 
 M.input = {

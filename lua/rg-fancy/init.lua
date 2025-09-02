@@ -24,10 +24,18 @@ local setups = {
 }
 
 local plugin_dir = ""
+local open_input_if_empty = true
 
 M.fn = {
     open_results = function()
         ui.results.open(setups.results)
+
+        if open_input_if_empty and ui.results.is_empty() then
+            vim.schedule(function()
+                ui.input.open(setups.input)
+                vim.cmd("startinsert!")
+            end)
+        end
     end,
     close_results = ui.results.close,
     focus_results = ui.results.focus,
@@ -94,6 +102,9 @@ end
 
 function M.setup(opts)
     plugin_dir = opts.plugin_dir
+    if opts.open_input_if_empty ~= nil then
+        open_input_if_empty = opts.open_input_if_empty
+    end
 
     if opts.keymaps then
         if opts.keymaps.global then
