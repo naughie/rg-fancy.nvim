@@ -23,7 +23,6 @@ local setups = {
     },
 }
 
-local plugin_dir = ""
 local open_input_if_empty = true
 
 M.fn = {
@@ -101,7 +100,6 @@ local function update_setup_functions(opts)
 end
 
 function M.setup(opts)
-    plugin_dir = opts.plugin_dir
     if opts.open_input_if_empty ~= nil then
         open_input_if_empty = opts.open_input_if_empty
     end
@@ -121,7 +119,7 @@ function M.setup(opts)
 
     hl.set_highlight_groups(opts.hl)
 
-    rpc.register(plugin_dir, opts.rpc_ns, opts.context_length)
+    rpc.register(opts.plugin_dir, opts.rpc_ns, opts.context_length)
 end
 
 return M
