@@ -28,15 +28,15 @@ local goto_item_line = function(fn_get_item, current_row)
 
     api.nvim_win_set_cursor(win, { row, 0 })
 
-    if line_idx_ext then
-        for _, ext in ipairs(line_idx_ext) do
-            hl.update_extmark.focus_line_idx(buf, ext)
-        end
-    end
-
     if curr and curr.line_idx_exts then
         for _, ext in ipairs(curr.line_idx_exts) do
             hl.update_extmark[ext.hl_group](buf, ext)
+        end
+    end
+
+    if line_idx_ext then
+        for _, ext in ipairs(line_idx_ext) do
+            hl.update_extmark.focus_line_idx(buf, ext)
         end
     end
 end
@@ -103,6 +103,14 @@ M.results = {
     goto_next_item_line = function()
         local row = api.nvim_win_get_cursor(0)[1]
         return goto_item_line("get_next_item_line", row)
+    end,
+    goto_first_item_line = function()
+        local row = api.nvim_win_get_cursor(0)[1]
+        return goto_item_line("get_first_item_line", row)
+    end,
+    goto_last_item_line = function()
+        local row = api.nvim_win_get_cursor(0)[1]
+        return goto_item_line("get_last_item_line", row)
     end,
 
     is_empty = render.manipulate.states.is_empty,

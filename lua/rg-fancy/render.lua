@@ -442,6 +442,25 @@ M.manipulate = {
                 end
             end
         end,
+
+        get_first_item_line = function(row)
+            return M.manipulate.results.get_next_item_line(1)
+        end,
+
+        get_last_item_line = function(row)
+            local current_states = states.results.get()
+            if not current_states then return end
+
+            local i = current_states.final_idx
+            local on_row = current_states.items[i]
+            if on_row then
+                if on_row.offset then
+                    return i + 1 + on_row.offset, on_row.line_idx_exts
+                else
+                    return i + 2, on_row.line_idx_exts
+                end
+            end
+        end,
     },
 }
 

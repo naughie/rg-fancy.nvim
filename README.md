@@ -91,6 +91,10 @@ Once spawning you can grep-search.
                         -- Go to the next/previous grep result.
                         { 'n', 'j', 'goto_next_item_line' },
                         { 'n', 'k', 'goto_prev_item_line' },
+
+                        -- Go to the first/last grep result.
+                        { 'n', 'gg', 'goto_first_item_line' },
+                        { 'n', 'G', 'goto_last_item_line' },
                     },
 
                     -- Keymaps on a grep-input window, opened by open_input or open_and_ins_input
